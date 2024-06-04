@@ -85,4 +85,14 @@ export class BiensService {
    
     return await this.biensRepository.remove(bien);
   }
+
+
+  async getAllBiens(page: number = 1, itemsPerPage: number = 10): Promise<Bien[]> {
+    const startIndex = (page - 1) * itemsPerPage;
+    return await this.biensRepository.find({
+      skip: startIndex,
+      take: itemsPerPage,
+    });
+  }
+  
 }

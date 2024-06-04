@@ -226,16 +226,38 @@ async create(authCredentialsDto: AuthCredentialsDto, imageFile: Express.Multer.F
     return await this.userRepository.findOne({ where: { id } }) ;
   }
 
-  async update(id: number, updateUserDto: AuthCredentialsDto) {
 
-    const user = await this.findOne(id);
 
-    if(!user) {
-      throw new NotFoundException();
+  async update(id: string, updateUserDto: AuthCredentialsDto, imageFile?: Express.Multer.File): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { id: parseInt(id) } });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
     }
-    Object.assign(user,updateUserDto);
 
-    return await this.userRepository.save(user);
+    const { email, password, firstName, lastName, phone, role } = updateUserDto;
+    user.email = email;
+    user.firstName = firstName;
+    user.lastName = lastName;
+    user.phone = phone;
+    user.role = role;
+
+    if (password) {
+      user.salt = await bcrypt.genSalt();
+      user.password = await this.hashPassword(password, user.salt);
+    }
+
+    if (imageFile) {
+      const imagePath = await this.fileService.saveFile(imageFile);
+      user.image = imagePath;
+    }
+
+    try {
+      await this.userRepository.save(user);
+      return user;
+    } catch (error) {
+      throw new InternalServerErrorException('Failed to update user');
+    }
   }
 
   async remove(id: number) {

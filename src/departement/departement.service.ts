@@ -13,7 +13,11 @@ export class DepartementService {
   ) {}
 
   async create(createDepartementDto: CreateDepartementDto) {
-    const departement = this.departementRepository.create(createDepartementDto);
+     // Définir explicitement la valeur de la colonne "isActive" sur false
+     const departement = this.departementRepository.create({
+      ...createDepartementDto,
+      isActive: true,
+    });
     return await this.departementRepository.save(departement);
   }
 
@@ -41,4 +45,16 @@ export class DepartementService {
     }
     return await this.departementRepository.remove(departement);
   }
+
+  // Méthode pour désactiver une departement
+  async disableDepartment(id: number): Promise<void> {
+    const departement = await this.findOne(id);
+    if (!departement) {
+      throw new NotFoundException('Departement introuvable');
+    }
+    departement.isActive = false;
+    await this.departementRepository.save(departement);
+  }
+
+
 }

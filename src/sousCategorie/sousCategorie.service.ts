@@ -16,8 +16,9 @@ export class SousCategorieService {
     private readonly categorieRepository: Repository<Categorie>, 
   ) {}
 
+  
   async create(createSousCategorieDto: CreateSousCategorieDto) {
-    const { categorieId, ...sousCategorieData } = createSousCategorieDto;
+    const { categorieId, ...sousCategorieData  } = createSousCategorieDto;
 
     // Vérifier si l'ID de la catégorie est fourni
     if (!categorieId) {
@@ -36,11 +37,14 @@ export class SousCategorieService {
     const sousCategorie = this.sousCategorieRepository.create({
       ...sousCategorieData,
       categorie: categorie,
+      isActive: true, 
     });
     
     // Enregistrer la sous-catégorie dans la base de données
     return await this.sousCategorieRepository.save(sousCategorie);
   }
+
+
 
   async findAll() {
     return await this.sousCategorieRepository.find({ relations: ['categorie'] });
@@ -87,4 +91,16 @@ export class SousCategorieService {
     }
     return await this.sousCategorieRepository.remove(sousCategorie);
   }
+
+  // Méthode pour désactiver une sousCategorie
+  async disableSousCategorie(id: number): Promise<void> {
+    const sousCategorie = await this.findOne(id);
+    if (!sousCategorie) {
+      throw new NotFoundException('SousCategorie introuvable');
+    }
+    sousCategorie.isActive = false;
+    await this.sousCategorieRepository.save(sousCategorie);
+  }
+
+
 }

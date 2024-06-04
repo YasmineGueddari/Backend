@@ -5,6 +5,7 @@
         "Departement",
         "enteties",
         "statut",
+        "Succursale",
         "typeorm"
     ]
 }

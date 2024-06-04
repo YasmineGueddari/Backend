@@ -95,9 +95,14 @@ export class userController {
     }
   
     @Patch(':id')
-    update(@Param('id') id: string, @Body() updateUserDto: AuthCredentialsDto) {
-      return this.authService.update(+id, updateUserDto);
-    }
+    @UseInterceptors(FileInterceptor('image')) // Utilisez le nom du champ de fichier approprié ici
+    async updateUser(
+    @Param('id') id: string,
+    @UploadedFile() image: Express.Multer.File,
+    @Body() updateUserDto: AuthCredentialsDto,
+  ) {
+    return this.authService.update(id, updateUserDto, image);
+  }
   
     @Delete(':id')
     remove(@Param('id') id: string) {

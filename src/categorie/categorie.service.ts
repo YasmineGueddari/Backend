@@ -13,10 +13,14 @@ export class CategorieService {
   ) {}
 
   async create(createCategorieDto: CreateCategorieDto) {
-    const categorie = this.categorieRepository.create(createCategorieDto);
+    const categorie = this.categorieRepository.create({
+      ...createCategorieDto,
+      isActive: true,
+    });
     return await this.categorieRepository.save(categorie);
   }
 
+ 
   async findAll() {
     return await this.categorieRepository.find();
   }
@@ -41,4 +45,15 @@ export class CategorieService {
     }
     return await this.categorieRepository.remove(categorie);
   }
+
+    // Méthode pour désactiver une Categorie
+    async disableCategorie(id: number): Promise<void> {
+      const categorie = await this.findOne(id);
+      if (!categorie) {
+        throw new NotFoundException('Categorie introuvable');
+      }
+      categorie.isActive = false;
+      await this.categorieRepository.save(categorie);
+    }
+  
 }

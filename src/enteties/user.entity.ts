@@ -2,6 +2,7 @@ import { BaseEntity, Column, Entity, OneToMany, PrimaryGeneratedColumn, Unique }
 import * as bcrypt from 'bcrypt'
 import { Role } from "src/common/enum/role.enum";
 import { getRepository } from "typeorm";
+import { UserSuccursale } from "./user-succursale.entity";
 
 @Entity()
 @Unique(['email'])
@@ -39,6 +40,8 @@ export class User extends BaseEntity {
         return hash === this.password;
     }
   
-
+    
+    @OneToMany(() => UserSuccursale, userSuccursale => userSuccursale.user)
+    userSuccursales: UserSuccursale[];
 
 }

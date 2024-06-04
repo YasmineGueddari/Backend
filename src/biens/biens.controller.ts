@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { BiensService } from './biens.service';
 import { CreateBienDto } from 'src/common/dtos/create-bien.dto';
 import { UpdateBienDto } from 'src/common/dtos/update-bien.dto';
@@ -13,6 +13,14 @@ export class BiensController {
   @Post()
   create(@Body() createBienDto: CreateBienDto) {
     return this.biensService.create(createBienDto);
+  }
+
+  @Get('/pagination') // Déplacer la route getAllBiens au-dessus de findAll
+  getAllBiens(@Query('page') page: string = '1', @Query('itemsPerPage') itemsPerPage: string = '10') {
+    const parsedPage = parseInt(page, 10);
+    const parsedItemsPerPage = parseInt(itemsPerPage, 10);
+    
+    return this.biensService.getAllBiens(parsedPage, parsedItemsPerPage);
   }
 
   @Get()
@@ -34,4 +42,8 @@ export class BiensController {
   remove(@Param('id') id: string) {
     return this.biensService.remove(+id);
   }
+
+ 
+
+
 }

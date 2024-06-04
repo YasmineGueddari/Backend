@@ -14,11 +14,13 @@ import { DepartementModule } from './departement/departement.module';
 import { CategorieModule } from './categorie/categorie.module';
 import { SousCategorieModule } from './sousCategorie/sousCategorie.module';
 import { FileModule } from './file/file.module';
+import { SuccursaleModule } from './succursale/succursale.module';
+import { UserSuccursaleModule } from './user-succursale/user-succursale.module';
 
 @Module({
   imports: [
     TypeOrmModule.forRoot(typeOrmConfig),
-    userModule,BiensModule,ReservationsModule,MailModule,DepartementModule,CategorieModule,SousCategorieModule,FileModule
+    userModule,BiensModule,ReservationsModule,MailModule,DepartementModule,CategorieModule,SousCategorieModule,FileModule,SuccursaleModule,UserSuccursaleModule
   ],
     
   controllers: [AppController],

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, InternalServerErrorException } from '@nestjs/common';
 import { DepartementService } from './departement.service';
 import { CreateDepartementDto } from 'src/common/dtos/create-departement.dto';
 import { UpdateDepartementDto } from 'src/common/dtos/update-departement.dto';
@@ -34,4 +34,15 @@ export class DepartementController {
   remove(@Param('id') id: string) {
     return this.departementService.remove(+id);
   }
+
+  @Delete(':id/disable')
+  async disableDepartment(@Param('id') id: number) { // Pas besoin de convertir ici
+  try {
+    await this.departementService.disableDepartment(id);
+    return { message: 'Department désactivée avec succès' };
+  } catch (error) {
+    console.error('Erreur lors de la désactivation de la department :', error);
+    throw new InternalServerErrorException('Erreur interne du serveur');
+  }
+}
 }

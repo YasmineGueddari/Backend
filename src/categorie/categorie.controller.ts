@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, InternalServerErrorException } from '@nestjs/common';
 import { CategorieService } from './categorie.service';
 import { CreateCategorieDto } from 'src/common/dtos/create-categorie.dto';
 import { UpdateCategorieDto } from 'src/common/dtos/update-categorie.dto';
@@ -32,4 +32,17 @@ export class CategorieController {
   remove(@Param('id') id: string) {
     return this.categorieService.remove(+id);
   }
+
+  @Delete(':id/disable')
+  async disableCategorie(@Param('id') id: number) { 
+  try {
+    await this.categorieService.disableCategorie(id);
+    return { message: 'Categorie désactivée avec succès' };
+  } catch (error) {
+    console.error('Erreur lors de la désactivation de la Categorie :', error);
+    throw new InternalServerErrorException('Erreur interne du serveur');
+  }
+}
+
+
 }
