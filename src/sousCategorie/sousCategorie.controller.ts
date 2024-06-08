@@ -1,9 +1,16 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, InternalServerErrorException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, InternalServerErrorException, UseGuards } from '@nestjs/common';
 import { SousCategorieService } from './sousCategorie.service'; 
 import { CreateSousCategorieDto } from 'src/common/dtos/create-sous-categorie.dto'; 
 import { UpdateSousCategorieDto } from 'src/common/dtos/update-sous-categorie.dto'; 
 import { SousCategorie } from 'src/enteties/sous-categorie.entity'; 
+import { ApiTags } from '@nestjs/swagger';
+
+
+
+
+@ApiTags('Backoffice SubCategorie')
 @Controller('sousCategorie')
+
 export class SousCategorieController {
   constructor(private readonly sousCategorieService: SousCategorieService) {}
 

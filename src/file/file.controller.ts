@@ -1,8 +1,11 @@
-import { BadRequestException, Controller, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Controller, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FileService } from './file.service';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Backoffice files')
 @Controller('files')
+
 export class FileController {
   constructor(private readonly fileService: FileService) {}
 

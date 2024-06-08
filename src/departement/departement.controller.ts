@@ -1,12 +1,17 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, InternalServerErrorException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, InternalServerErrorException, Put, UseGuards } from '@nestjs/common';
 import { DepartementService } from './departement.service';
 import { CreateDepartementDto } from 'src/common/dtos/create-departement.dto';
 import { UpdateDepartementDto } from 'src/common/dtos/update-departement.dto';
 import { promises } from 'dns';
 import { Departement } from 'src/enteties/departement.entity';
+import { ApiTags } from '@nestjs/swagger';
 
 
+
+
+@ApiTags('Backoffice departement')
 @Controller('departement')
+
 export class DepartementController {
   constructor(private readonly departementService: DepartementService) {}
 
@@ -45,4 +50,18 @@ export class DepartementController {
     throw new InternalServerErrorException('Erreur interne du serveur');
   }
 }
+
+
+@Put(':id/reactivate')
+async reactivateDepartment(@Param('id') id: number) {
+  try{
+  await this.departementService.reactivateDepartment(id);
+  return { message: 'Department  reactivate avec succès' };
+} catch (error) {
+  console.error('Erreur lors de la  reactivate de Department :', error);
+  throw new InternalServerErrorException('Erreur interne du serveur');
+}
+}
+
+
 }

@@ -3,16 +3,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt'
 import { JwtService } from '@nestjs/jwt';
-import { MailerService } from '@nestjs-modules/mailer';
-
-
 import { AuthCredentialsDto } from 'src/common/dtos/auth-credentials.dto';
 import { SingCredentialsDto } from 'src/common/dtos/signin-credentials.dto';
 import { JwtPayload } from 'src/common/interfaces/jwt-payload.interface';
 import { User } from 'src/enteties/user.entity';
 import { ChangePasswordDto } from 'src/common/dtos/ChangePassword.dto';
-import { Role } from 'src/common/enum/role.enum';
 import { FileService } from 'src/file/file.service';
+import { Succursale } from 'src/enteties/succursale.entity';
+import { MailerService } from '@nestjs-modules/mailer';
+
 
 
 
@@ -24,9 +23,12 @@ export class userService {
     constructor(
         @InjectRepository(User)
         private userRepository: Repository<User>,
+        @InjectRepository(Succursale) // Ajoutez cette ligne pour injecter le repository de Succursale
+        private succursaleRepository: Repository<Succursale>, // Assurez-vous d'importer la classe Succursale
+        
         private jwtService:JwtService,
         private mailerService: MailerService,
-        private fileService: FileService
+        private fileService: FileService,
       ){}
 
 //Sign up 
@@ -53,160 +55,174 @@ export class userService {
         }
       }
 
+
+
      
- //Sign in
+ 
+ // SignIn method
+async signIn(authCredentialsDto: SingCredentialsDto): Promise<{ accessToken: string, id: number, firstName: string, lastName: string, role: string, image: string, idSuccursale: number | null }> {
+  // Validate user credentials
+  const email = await this.ValidateUserPassword(authCredentialsDto);
 
-    async signIn(authCredentialsDto: SingCredentialsDto): Promise<{ accessToken: string, id: number, firstName: string, lastName: string, role: string, image:string }> {
-      // Validez les identifiants de l'utilisateur
-      const email = await this.ValidateUserPassword(authCredentialsDto);
-      
-      if (!email) {
-          throw new UnauthorizedException('Invalid credentials');
-      }
-  
-      // Récupérez l'utilisateur depuis la base de données
-      const user = await this.userRepository.findOne({
-          where: {
-              email: authCredentialsDto.email,
-          },
-      });
-      
-      // Générez le JWT
-      const payload: JwtPayload = {
-          email: user.email,
-      };
-      const accessToken = await this.jwtService.sign(payload);
-      
-      // Retournez le jeton d'accès et les détails de l'utilisateur
-      return { accessToken, id: user.id, firstName: user.firstName, lastName: user.lastName, role: user.role, image: user.image };
+  if (!email) {
+    throw new UnauthorizedException('Invalid credentials');
   }
-  
-   //validate password then we used in the method signIn 
-    async ValidateUserPassword(authCredantialsDto:SingCredentialsDto):Promise<string>{
-        const {email, password}= authCredantialsDto;
-        const user=await this.userRepository.findOne({
-            where: {  email }
-        });
 
-        if (user && await user.validatePassword(password)){
-            return user.email;
-            
-        }
-        else { 
-            return null
-        }
-    }
+  // Retrieve user from the database
+  const user = await this.userRepository.findOne({
+    where: { email: authCredentialsDto.email },
+    relations: ['succursales'], // Load related entities
+  });
 
-    
-    //hash password
-    private async hashPassword(password:string,salt:string):Promise<string>{
-        return bcrypt.hash(password,salt);
-    }
-  
+  if (!user) {
+    throw new NotFoundException('User not found');
+  }
 
-    
-   //change Password
-    async changePassword(id: number, changePasswordDto: ChangePasswordDto) {
-      const { currentPassword, newPassword } = changePasswordDto;
-      const user = await this.userRepository.findOne({ where: { id } }); // Utilisez l'option where pour rechercher par ID
+  // Generate JWT
+  const payload: JwtPayload = {
+    email: user.email,
+  };
+  const accessToken = await this.jwtService.sign(payload, { expiresIn: '2h' });
+  const currentDate = new Date();
 
-      if (!user) {
-        throw new NotFoundException('User not found');
-      }
 
-      // Vérifiez si le mot de passe actuel correspond
-      const isMatch = await user.validatePassword(currentPassword);
-      if (!isMatch) {
-        throw new Error('Invalid current password');
-      }
-
-      // Changez le mot de passe
-      user.password = await this.hashPassword(newPassword, user.salt);
-      await user.save();
-
-      return { message: 'Password updated successfully' };
+  // Return access token and user details
+  const idSuccursale = user.succursales.length > 0 ? user.succursales[0].id : null;
+  return { 
+    accessToken, 
+    id: user.id, 
+    firstName: user.firstName, 
+    lastName: user.lastName, 
+    role: user.role, 
+    image: user.image, 
+    idSuccursale 
+  };
 }
 
 
 
 
-      // Réinitialisation du mot de passe et envoi par e-mail
-      async resetPassword(email: string): Promise<string> {
-      const user = await this.userRepository.findOne({ where: { email } });
+   //validate password then we used in the method signIn 
+   async ValidateUserPassword(authCredantialsDto:SingCredentialsDto):Promise<string>{
+    const {email, password}= authCredantialsDto;
+    const user=await this.userRepository.findOne({
+        where: {  email }
+    });
 
-      if (!user) {
-          throw new NotFoundException('User not found');
-      }
+    if (user && await user.validatePassword(password)){
+        return user.email;
+        
+    }
+    else { 
+        return null
+    }
+}
+ 
 
-      // Générer un nouveau mot de passe aléatoire
-      const newPassword = this.generateRandomPassword();
+//hash password
+private async hashPassword(password:string,salt:string):Promise<string>{
+  return bcrypt.hash(password,salt);
+}
 
-      // Hacher le nouveau mot de passe
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-      // Mettre à jour le mot de passe de l'utilisateur dans la base de données
-      user.password = hashedPassword;
-      await this.userRepository.save(user);
 
-      // Envoyer le nouveau mot de passe par e-mail
-      await this.sendPasswordResetEmail(user.email, newPassword);
+ // Send password reset link
+ async sendPasswordResetLink(email: string): Promise<void> {
+  const user = await this.userRepository.findOne({ where: { email } });
+  if (!user) {
+    throw new NotFoundException('User not found');
+  }
 
-      // Retourner le nouveau mot de passe
-      return newPassword;
+  const token = this.jwtService.sign({ email }, { expiresIn: '2h' });
+  const resetLink = `http://localhost:4200/set-new-password?token=${token}`;
+
+  await this.mailerService.sendMail({
+    to: email,
+    subject: 'Password Reset Request',
+    template: './reset-password',
+    context: { resetLink },
+  });
+}
+
+
+
+
+// Set new password
+async setNewPassword(token: string, password: string): Promise<{ message: string }> {
+  try {
+    const decoded = this.jwtService.verify(token);
+    const email = decoded.email;
+
+    const user = await this.userRepository.findOne({ where: { email } });
+    if (!user) {
+      throw new NotFoundException('User not found');
     }
 
+    const salt = await bcrypt.genSalt();
+    const hashedPassword = await this.hashPassword(password, salt);
+    user.password = hashedPassword;
+    user.salt = salt; // Store the salt
 
-      // Méthode privée pour envoyer l'e-mail de réinitialisation du mot de passe
-      private async sendPasswordResetEmail(email: string, newPassword: string): Promise<void> {
-        try {
-            await this.mailerService.sendMail({
-                to: email,
-                subject: 'Password Reset Request',
-                template: 'password-reset', // Modèle de courrier électronique à utiliser
-                context: {
-                    newPassword, 
-                },
-            });
-        } catch (error) {
-            console.error('Error sending password reset email:', error);
-            throw new Error('Failed to send password reset email');
-        }
-      }
+    await this.userRepository.save(user);
 
-      // Méthode pour générer un mot de passe aléatoire
-      private generateRandomPassword(length: number = 10): string {
-        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        let newPassword = '';
-        for (let i = 0; i < length; i++) {
-            newPassword += characters.charAt(Math.floor(Math.random() * characters.length));
-        }
-        return newPassword;
-      }
+    return { message: 'Password updated successfully' };
+  } catch (error) {
+    throw new UnauthorizedException('Invalid or expired token');
+  }
+}
 
+
+
+//change Password
+async changePassword(id: number, changePasswordDto: ChangePasswordDto) {
+  const { currentPassword, newPassword } = changePasswordDto;
+  const user = await this.userRepository.findOne({ where: { id } }); // Utilisez l'option where pour rechercher par ID
+
+  if (!user) {
+    throw new NotFoundException('User not found');
+  }
+
+  // Vérifiez si le mot de passe actuel correspond
+  const isMatch = await user.validatePassword(currentPassword);
+  if (!isMatch) {
+    throw new Error('Invalid current password');
+  }
+
+  // Changez le mot de passe
+  user.password = await this.hashPassword(newPassword, user.salt);
+  await user.save();
+
+  return { message: 'Password updated successfully' };
+}
 
       
 
 //CRUD
-
-async create(authCredentialsDto: AuthCredentialsDto, imageFile: Express.Multer.File): Promise<User> {
-  const { email, password, firstName, lastName, phone, role } = authCredentialsDto; // Assurez-vous que le rôle est inclus dans le DTO
+async create(authCredentialsDto: AuthCredentialsDto, imageFile: Express.Multer.File, idSuccursales: number[]): Promise<User> {
+  const { email, password, firstName, lastName, phone, role, isActive } = authCredentialsDto;
 
   const user = new User();
   user.email = email;
   user.firstName = firstName;
   user.lastName = lastName;
   user.phone = phone;
-  user.role = role; // Affectez le rôle à partir du DTO
+  user.role = role;
+  user.isActive = isActive;
 
   user.salt = await bcrypt.genSalt();
   user.password = await this.hashPassword(password, user.salt);
-  
+
   if (imageFile) {
     const imagePath = await this.fileService.saveFile(imageFile);
     user.image = imagePath;
   }
 
   try {
+    const succursales = await this.succursaleRepository.findByIds(idSuccursales);
+    if (!succursales || succursales.length !== idSuccursales.length) {
+      throw new NotFoundException(`One or more succursales not found`);
+    }
+    user.succursales = succursales;
     await user.save();
     return user;
   } catch (error) {
@@ -218,47 +234,85 @@ async create(authCredentialsDto: AuthCredentialsDto, imageFile: Express.Multer.F
   }
 }
 
-  async findAll() {
-    return await this.userRepository.find();
-  }
-
-  async findOne(id: number) {
-    return await this.userRepository.findOne({ where: { id } }) ;
-  }
 
 
+async findAll(): Promise<User[]> {
+  // Récupérer tous les utilisateurs avec leurs relations succursales
+  const users = await this.userRepository.find({ relations: ['succursales'] });
+  return users;
+}
 
-  async update(id: string, updateUserDto: AuthCredentialsDto, imageFile?: Express.Multer.File): Promise<User> {
-    const user = await this.userRepository.findOne({ where: { id: parseInt(id) } });
+  async findOne(id: number): Promise<User> {
+    // Récupérer l'utilisateur depuis la base de données
+    const user = await this.userRepository.findOne({
+        where: { id },
+        relations: ['succursales'], // Charger les relations succursales
+    });
 
+    // Vérifiez si l'utilisateur existe
     if (!user) {
-      throw new NotFoundException('User not found');
+        throw new NotFoundException(`User with ID ${id} not found`);
     }
 
-    const { email, password, firstName, lastName, phone, role } = updateUserDto;
+    // Retournez l'utilisateur
+    return user;
+}
+  
+
+
+
+async update(id: number, updateUserDto: AuthCredentialsDto, image: Express.Multer.File, idSuccursales: number[]): Promise<User> {
+  const { email, password, firstName, lastName, phone, role } = updateUserDto;
+
+  try {
+    // Trouver l'utilisateur à mettre à jour
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+
+    // Mettre à jour les champs avec les nouvelles valeurs
     user.email = email;
     user.firstName = firstName;
     user.lastName = lastName;
     user.phone = phone;
     user.role = role;
 
+    // Vérifier si un nouveau mot de passe est fourni et le mettre à jour
     if (password) {
       user.salt = await bcrypt.genSalt();
       user.password = await this.hashPassword(password, user.salt);
     }
 
-    if (imageFile) {
-      const imagePath = await this.fileService.saveFile(imageFile);
+    // Vérifier si une nouvelle image est fournie et la mettre à jour
+    if (image) {
+      const imagePath = await this.fileService.saveFile(image);
       user.image = imagePath;
     }
 
-    try {
-      await this.userRepository.save(user);
-      return user;
-    } catch (error) {
+    // Trouver les succursales correspondant aux ID fournis
+    const succursales = await this.succursaleRepository.findByIds(idSuccursales);
+    if (!succursales || succursales.length !== idSuccursales.length) {
+      throw new NotFoundException(`One or more succursales not found`);
+    }
+    
+    // Mettre à jour la liste des succursales de l'utilisateur
+    user.succursales = succursales;
+
+    // Enregistrer les modifications dans la base de données
+    await user.save();
+    return user;
+  } catch (error) {
+    if (error.code === '23505') {
+      throw new ConflictException('Email already exists');
+    } else {
       throw new InternalServerErrorException('Failed to update user');
     }
   }
+}
+
+
+
 
   async remove(id: number) {
     const user = await this.findOne(id);
@@ -270,5 +324,30 @@ async create(authCredentialsDto: AuthCredentialsDto, imageFile: Express.Multer.F
   }
 
 
+  // Méthode pour désactiver un User
+  async disableUser(id: number): Promise<void> {
+    const user = await this.findOne(id);
+    if (!user) {
+      throw new NotFoundException('User introuvable');
+    }
+    user.isActive = false;
 
-}
+    await this.userRepository.save(user);
+  }
+
+
+ // Méthode pour reactivate un User
+  async reactivateUser(id: number): Promise<any> {
+    const user = await this.findOne(id);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    user.isActive = true;
+
+     await this.userRepository.save(user);
+    }
+
+
+  }
+

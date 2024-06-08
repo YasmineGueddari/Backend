@@ -1,7 +1,7 @@
-import { IsEmail, IsNumber, IsString, MaxLength, MinLength } from "class-validator";
+import { IsBoolean, IsEmail, IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength, MinLength, IsArray, ArrayNotEmpty } from "class-validator";
 import { Role } from "../enum/role.enum";
 
-export class AuthCredentialsDto{
+export class AuthCredentialsDto {
 
     @IsString()
     firstName: string;
@@ -12,23 +12,33 @@ export class AuthCredentialsDto{
     @IsString()
     phone: string;
 
+    @IsOptional()
     @IsString()
-    image: string;
+    image?: string;
 
     @IsEmail()
-    email:string;
+    email: string;
 
-   @IsString()
-   @MinLength(4)
-   @MaxLength(20)
-   password: string;
+    @IsString()
+    @MinLength(4)
+    @MaxLength(20)
+    password: string;
 
-   @IsString()
-   @MinLength(4)
-   @MaxLength(20)
-   confirmPassword: string;
+    @IsString()
+    @MinLength(4)
+    @MaxLength(20)
+    confirmPassword: string;
 
-   role: Role;
+    @IsNotEmpty()
+    @IsBoolean()
+    isActive: boolean; 
+
+    @IsNotEmpty()
+    role: Role;
+
+    @IsArray()
+    @ArrayNotEmpty()
+    idSuccursales: number[];
+
    
-
 }

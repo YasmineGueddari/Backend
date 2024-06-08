@@ -1,39 +1,38 @@
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, ExtractJwt } from 'passport-jwt';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import * as config from 'config'
 import { User } from 'src/enteties/user.entity';
 import { JwtPayload } from 'src/common/interfaces/jwt-payload.interface';
+import * as dotenv from 'dotenv';
 
-
-
+dotenv.config();
 
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy) {
+export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      secretOrKey:process.env.JWT_SECRET || config.get('jwt.secret'), // use your own secret key
+      secretOrKey: process.env.JWT_SECRET,
+      ignoreExpiration: false,
     });
   }
 
   async validate(payload: JwtPayload): Promise<User> {
+    //console.log('Validating payload:', payload);
     const { email } = payload;
     const user = await this.userRepository.findOne({
-        where: { email }
+      where: { email }
     });
     if (!user) {
+      //console.log('User not found with email:', email);
       throw new UnauthorizedException();
     }
-  
-   // add the role property to the user object
+    //console.log('User found:', user);
     return user;
   }
-  
-  
 }

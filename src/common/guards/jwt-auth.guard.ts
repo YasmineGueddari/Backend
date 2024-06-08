@@ -1,31 +1,43 @@
-import { ExecutionContext, Injectable } from '@nestjs/common';
+import { ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from 'src/common/decorators/public.decorator';
-import { JwtStrategy } from 'src/user/jwt.strategy';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
-  constructor(
-    private readonly jwtStrategy: JwtStrategy,
-    private readonly reflector: Reflector,
-  ) {
+  constructor(private readonly reflector: Reflector, private readonly jwtService: JwtService) {
     super();
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const isPublic = this.reflector.get<boolean>(
-      IS_PUBLIC_KEY,
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
-    );
+      context.getClass(),
+    ]);
     if (isPublic) {
       return true;
     }
-
-    await super.canActivate(context);
     const request = context.switchToHttp().getRequest();
-    const user = await this.jwtStrategy.validate(request.user);
-    request.user = user;
-    return true;
+    const token = request.headers.authorization?.split(' ')[1];
+    if (token) {
+      const decodedToken = this.jwtService.decode(token) as any;
+      const currentDate = new Date();
+      //console.log('Token Expiration Time (UTC):', new Date(decodedToken.exp * 1000).toISOString());
+      //console.log('Current Time (UTC):', currentDate.toISOString());
+
+      if (currentDate.getTime() > decodedToken.exp * 1000) {
+        throw new UnauthorizedException('Token has expired');
+      }
+    }
+    return (await super.canActivate(context)) as boolean;
   }
+
+  //handleRequest(err, user, info) {
+    //console.log('JwtAuthGuard - handleRequest called', { err, user, info });
+    //if (err || !user) {
+      //throw err || new UnauthorizedException(info?.message || 'Unauthorized');
+    //}
+    //return user;
+  //}
 }

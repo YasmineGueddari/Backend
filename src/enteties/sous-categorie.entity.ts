@@ -11,15 +11,18 @@ export class SousCategorie {
   @Column()
   name: string;
 
-
   @Column({ default: true }) // Par défaut, isActive est true
     isActive: boolean;
+
+
 
   @CreateDateColumn({ name: 'createdAt', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     createdAt: Date;
 
   @UpdateDateColumn({ name: 'updatedAt', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
     updatedAt: Date;
+
+    
   
   @ManyToOne(() => Categorie, categorie => categorie.sousCategories)
   categorie: Categorie;

@@ -1,23 +1,23 @@
-import { TypeOrmModuleOptions } from "@nestjs/typeorm";
-import * as config from 'config'
-import { Bien } from "src/enteties/bien.entity";
-import { Categorie } from "src/enteties/categorie.entity";
-import { Reservation } from "src/enteties/reservation.entity";
-import { Departement } from "src/enteties/departement.entity";
-import { SousCategorie } from "src/enteties/sous-categorie.entity";
-import { User } from "src/enteties/user.entity";
+//Configurez TypeORM pour Utiliser les Variables d'Environnement
+import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import * as dotenv from 'dotenv';
 
-const dbConfig = config.get('db')
+dotenv.config();
 
-export const typeOrmConfig: TypeOrmModuleOptions={
-    type: dbConfig.type,
-    host:  dbConfig.host,
-    port:dbConfig.port,
-    username:dbConfig.username,
-    password:dbConfig.password,
-    database: dbConfig.database,
-    entities:["dist/**/*.entity{.ts,.js}"],
-    synchronize: dbConfig.synchronize,
+export const typeOrmConfig: TypeOrmModuleOptions = {
+  type: process.env.DB_TYPE as any,
+  host: process.env.DB_HOST || 'localhost',
+  port: parseInt(process.env.DB_PORT, 10),
+  username: process.env.DB_USERNAME || 'default_username',
+  password: process.env.DB_PASSWORD || 'default_password',
+  database: process.env.DB_DATABASE,
+  entities: [__dirname + '/../**/*.entity{.ts,.js}'],
+  synchronize: process.env.DATABASE_SYNCHRONIZE === 'true',
+};
 
-    
-}
+// Log to verify environment variables are loaded correctly
+//console.log('Database Type:', process.env.DB_TYPE);
+//console.log('Database Host:', process.env.DB_HOST);
+//console.log('Database Port:', process.env.DB_PORT);
+//console.log('Database Username:', process.env.DB_USERNAME);
+//console.log('Database Name:', process.env.DB_DATABASE);

@@ -57,4 +57,17 @@ export class DepartementService {
   }
 
 
+        // Méthode pour reactivate un departement
+        async reactivateDepartment(id: number): Promise<any> {
+          const departement = await this.findOne(id);
+          if (!departement) {
+            throw new NotFoundException('User not found');
+          }
+      
+          departement.isActive = true;
+      
+           await this.departementRepository.save(departement);
+          }
+
+
 }

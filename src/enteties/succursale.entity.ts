@@ -1,5 +1,6 @@
-import { BaseEntity, Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, Unique, UpdateDateColumn } from "typeorm";
-import { UserSuccursale } from "./user-succursale.entity";
+import { BaseEntity, Column, CreateDateColumn, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn, Unique, UpdateDateColumn } from "typeorm";
+import { User } from "./user.entity";
+import { Departement } from "./departement.entity";
 
 @Entity()
 @Unique(['email'])
@@ -26,12 +27,19 @@ export class Succursale extends BaseEntity {
     @Column({ default: true }) // Par défaut, isActive est true
     isActive: boolean;
 
+
     @CreateDateColumn({ name: 'createdAt', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     createdAt: Date;
 
     @UpdateDateColumn({ name: 'updatedAt', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
     updatedAt: Date;
+    
 
-    @OneToMany(() => UserSuccursale, userSuccursale => userSuccursale.succursale)
-    userSuccursales: UserSuccursale[];
+    @ManyToMany(() => User, user => user.succursales)
+    users: User[];
+
+    @OneToMany(() => Departement, departement => departement.succursale)
+    departements: Departement[];
+
+
 }

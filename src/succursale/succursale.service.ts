@@ -14,7 +14,7 @@ export class SuccursaleService {
   }
 
   async create(createSuccursaleDto: CreateSuccursaleDto) {
-    // Définir explicitement la valeur de la colonne "isActive" sur false
+    // Définir explicitement la valeur de la colonne "isActive" sur true
     const succursale = this.succursaleRepository.create({
       ...createSuccursaleDto,
       isActive: true,
@@ -62,8 +62,22 @@ export class SuccursaleService {
         await this.succursaleRepository.save(succursale);
       }
 
+  
+       // Méthode pour reactivate un succursale
+    async reactivateSuccursale(id: number): Promise<any> {
+      const succursale = await this.findOne(id);
+      if (!succursale) {
+        throw new NotFoundException('User not found');
+      }
+  
+      succursale.isActive = true;
+  
+       await this.succursaleRepository.save(succursale);
+      }
+      
+
       
 
 }
-
+ 
 

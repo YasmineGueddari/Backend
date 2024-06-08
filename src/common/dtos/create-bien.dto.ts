@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateBienDto {
   @IsNotEmpty()
@@ -10,8 +10,20 @@ export class CreateBienDto {
   description: string;
 
   @IsNotEmpty()
+  @IsBoolean()
+  statut: boolean; 
+
+  @IsOptional()
   @IsString()
-  statut: string;
+  image?: string;
+
+  @IsNotEmpty()
+  @IsBoolean()
+  isActive: boolean; 
+
+  @IsNotEmpty()
+  @IsBoolean()
+  requiresConfirmation: boolean; 
 
   @IsNumber()
   departementId: number;

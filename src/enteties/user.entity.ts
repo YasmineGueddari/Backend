@@ -1,8 +1,10 @@
-import { BaseEntity, Column, Entity, OneToMany, PrimaryGeneratedColumn, Unique } from "typeorm";
+import { BaseEntity, Column, CreateDateColumn, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn, Unique, UpdateDateColumn } from "typeorm";
 import * as bcrypt from 'bcrypt'
+import { Succursale } from "./succursale.entity";
+import { Reservation } from "./reservation.entity";
+import { Reclamation } from "./reclamation.entity";
+import { Notification } from './notification.entity';
 import { Role } from "src/common/enum/role.enum";
-import { getRepository } from "typeorm";
-import { UserSuccursale } from "./user-succursale.entity";
 
 @Entity()
 @Unique(['email'])
@@ -26,11 +28,8 @@ export class User extends BaseEntity {
     @Column({ type: 'text', nullable: true })
     phone: string;
 
-    @Column({ type: 'enum', enum: Role })
+    @Column({ type: 'text', nullable: true }) // Si le rôle est stocké en tant que texte
     role: Role;
-
-    @Column({ type: 'text', nullable: true })
-    image: string;
 
     @Column()
     salt: string;
@@ -39,9 +38,30 @@ export class User extends BaseEntity {
         const hash = await bcrypt.hash(password, this.salt);
         return hash === this.password;
     }
-  
-    
-    @OneToMany(() => UserSuccursale, userSuccursale => userSuccursale.user)
-    userSuccursales: UserSuccursale[];
 
+    @Column({ type: 'text', nullable: true })
+    image: string;
+
+    @Column({ default: true }) // Par défaut, isActive est true
+    isActive: boolean;
+
+    @CreateDateColumn({ name: 'createdAt', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+    createdAt: Date;
+
+    @UpdateDateColumn({ name: 'updatedAt', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
+    updatedAt: Date;
+
+    @ManyToMany(() => Succursale, succursale => succursale.users)
+    @JoinTable({ name: 'user_succursale' })
+    succursales: Succursale[];
+
+    @OneToMany(() => Reservation, reservation => reservation.user)
+    reservations: Reservation[];
+
+    @OneToMany(() => Reclamation, reclamation => reclamation.user)
+    reclamations: Reclamation[];
+
+    @ManyToMany(() => Notification, notification => notification.users)
+    @JoinTable({ name: 'user_notification' }) // Utilisez un objet pour spécifier le nom de la table de jointure
+    notifications: Notification[];
 }
