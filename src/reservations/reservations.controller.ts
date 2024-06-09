@@ -21,8 +21,8 @@ export class ReservationsController {
   constructor(private readonly reservationsService: ReservationsService) {}
 
   @Post()
-  @UseGuards(RolesGuard)
-  @Roles(Role.Admin)
+ // @UseGuards(RolesGuard)
+ // @Roles(Role.Admin)
   create(@Body() createReservationDto: CreateReservationDto ,    @GetUser() user:User,
 ) {
     return this.reservationsService.create(createReservationDto);
