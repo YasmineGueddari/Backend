@@ -33,13 +33,15 @@ export class userService {
 
 //Sign up 
       async signUp(authCredentialsDto: AuthCredentialsDto): Promise<User> {
-        const { email, password, firstName, lastName, phone } = authCredentialsDto;
+        const { email, password, firstName, lastName, phone , role } = authCredentialsDto;
       
         const user = new User();
         user.email = email;
         user.firstName = firstName;
         user.lastName = lastName;
         user.phone = phone;
+        user.role = role;
+
         user.salt = await bcrypt.genSalt();
         user.password = await this.hashPassword(password, user.salt);
       

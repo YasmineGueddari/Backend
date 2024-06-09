@@ -5,6 +5,11 @@ import { UpdateReservationDto } from 'src/common/dtos/update-reservation.dto';
 import { promises } from 'dns';
 import { Reservation } from 'src/enteties/reservation.entity';
 import { ApiTags } from '@nestjs/swagger';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { Role } from 'src/common/enum/role.enum';
+import { RolesGuard } from 'src/common/guards/rolesGuard.guard';
+import { GetUser } from 'src/common/decorators/get-user.decorator';
+import { User } from 'src/enteties/user.entity';
 
 
 
@@ -16,7 +21,10 @@ export class ReservationsController {
   constructor(private readonly reservationsService: ReservationsService) {}
 
   @Post()
-  create(@Body() createReservationDto: CreateReservationDto) {
+  @UseGuards(RolesGuard)
+  @Roles(Role.Admin)
+  create(@Body() createReservationDto: CreateReservationDto ,    @GetUser() user:User,
+) {
     return this.reservationsService.create(createReservationDto);
   }
 
